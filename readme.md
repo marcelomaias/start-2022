@@ -1,3 +1,3 @@
 # start-one
 
-Gulp start project. SASS, Javascript, WebP.
+Start for Nunjucks, SASS, JS minify, Images minify and webp.

@@ -1,4 +1,5 @@
 const { src, dest, watch, series} = require('gulp');
+const nunjucks = require('gulp-nunjucks-render');
 const sass = require('gulp-sass');
 const prefix = require('gulp-autoprefixer');
 const minify = require('gulp-clean-css');
@@ -8,6 +9,8 @@ const imagewebp = require('gulp-webp');
 
 
 const files = {
+    viewsSrc: 'src/views/pages/*.njk',
+    templates: 'src/views',
     scss: 'src/scss/**/*.scss',
     css: 'dist/css',
     jsSrc: 'src/js/*.js',
@@ -16,6 +19,13 @@ const files = {
     imgDist: 'dist/images',
     webpSrc: 'dist/images/*.{jpg,png}'
 }
+
+function html() {
+  return src(files.viewsSrc)
+    .pipe(nunjucks({path: [files.templates]}))
+    .pipe(dest('dist'))
+}
+
 
 //compile, prefix, and min scss
 function styles() {
@@ -53,6 +63,7 @@ function jsmin(){
 
 //watchtask
 function watchTask(){
+  watch(files.templates, html);
   watch(files.scss, styles);
   watch(files.jsSrc, jsmin);
   watch(files.imgSrc, images);
@@ -62,6 +73,7 @@ function watchTask(){
 
 // Default Gulp task 
 exports.default = series(
+  html,
   styles,
   jsmin,
   images,
