@@ -1,0 +1,9 @@
+{% macro image(name, class) %}
+ <picture class="{{class}}">
+    <source srcset="images/{{ name }}.webp" type="image/webp" />
+    <img src="images/{{ name }}.jpg" alt="Alt Text!" loading="lazy" />
+  </picture>
+{% endmacro %}
+
+
+ 

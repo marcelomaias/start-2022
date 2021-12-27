@@ -3,10 +3,24 @@ const nunjucks = require('gulp-nunjucks-render');
 const sass = require('gulp-sass');
 const prefix = require('gulp-autoprefixer');
 const minify = require('gulp-clean-css');
+const browserSync = require("browser-sync");
 const terser = require('gulp-terser');
 const imagemin = require('gulp-imagemin');
 const imagewebp = require('gulp-webp');
+const { argv } = require("yargs");
+const gulpLoadPlugins = require("gulp-load-plugins");
+const browserify = require('browserify');
+const babelify = require('babelify');
+const source = require('vinyl-source-stream');
+const buffer = require('vinyl-buffer');
+const modernizr = require('gulp-modernizr');
 
+
+const $ = gulpLoadPlugins();
+const port = argv.port || 9000;
+const server = browserSync.create();
+
+const isProd = process.env.NODE_ENV === "production";
 
 const files = {
     viewsSrc: 'src/views/pages/*.njk',
@@ -19,6 +33,24 @@ const files = {
     imgDist: 'dist/images',
     webpSrc: 'dist/images/*.{jpg,png}'
 }
+
+function scripts() {
+  const b = browserify({
+    entries: "src/js/main.js",
+    transform: babelify,
+    debug: true
+  });
+  return b
+    .bundle()
+    .pipe(source("bundle.js"))
+    .pipe($.plumber())
+    .pipe(buffer())
+    .pipe($.if(!isProd, $.sourcemaps.init({ loadMaps: true })))
+    .pipe($.if(!isProd, $.sourcemaps.write(".")))
+    .pipe(dest(files.jsDist))
+    // .pipe(server.reload({ stream: true }));
+}
+
 
 function html() {
   return src(files.viewsSrc)
@@ -53,21 +85,44 @@ function webp() {
     .pipe(dest(files.imgDist))
 };
 
-
-// minify js
-function jsmin(){
+function modernizrTask() {
   return src(files.jsSrc)
-    .pipe(terser())
-    .pipe(dest(files.jsDist));
+  .pipe(modernizr({
+    'options': ['setClasses'],
+    'tests': [
+      'webp'
+    ]
+  }))
+  .pipe(dest(files.jsDist))
 }
+// minify js
+// function jsmin(){
+//   return src(files.jsSrc)
+//     .pipe(terser())
+//     .pipe(dest(files.jsDist));
+// }
 
-//watchtask
-function watchTask(){
+function serve() {
+  server.init({
+    notify: false,
+    port,
+    server: {
+      baseDir: ["./dist"],
+      routes: {
+        "/node_modules": "node_modules"
+      }
+    }
+  });
+
   watch(files.templates, html);
   watch(files.scss, styles);
-  watch(files.jsSrc, jsmin);
+  watch(files.jsSrc, scripts);
   watch(files.imgSrc, images);
   watch(files.webpSrc, webp);
+  watch([files.templates, files.scss, files.imgSrc, files.jsSrc]).on(
+    "change",
+    server.reload
+  );
 }
 
 
@@ -75,8 +130,9 @@ function watchTask(){
 exports.default = series(
   html,
   styles,
-  jsmin,
+  scripts,
+  modernizrTask,
   images,
   webp,
-  watchTask
+  serve
 );
