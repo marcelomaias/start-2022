@@ -1,6 +1,6 @@
 const { src, dest, watch, series} = require('gulp');
 const nunjucks = require('gulp-nunjucks-render');
-const sass = require('gulp-sass');
+const sass = require('gulp-sass')(require('sass'));
 const prefix = require('gulp-autoprefixer');
 const minify = require('gulp-clean-css');
 const browserSync = require("browser-sync");
